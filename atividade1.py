@@ -1,13 +1,37 @@
 import datetime
 import numpy as np
+import matplotlib.pyplot as plt	
 
-numeroErrosE = 0
-numeroErrosF = 0
-contadorMensagens = 0
-totalMensagens = 1e6
+def plota3D(a, b, funcao):
+	fig = plt.figure(figsize=(8, 3))
+	ax1 = fig.add_subplot(121, projection='3d')
+	ax2 = fig.add_subplot(122, projection='3d')
 
-def escuto(probErroE=0.1, probErroF=0.1):
-	global numeroErrosE, numeroErrosF
+	_xx, _yy = np.meshgrid(a, b)
+	x, y = _xx.ravel(), _yy.ravel()
+
+	top1 = []
+	top2 = []
+	for j in range(len(x)):
+		top1.append(funcao(x[j], y[j])[0])
+		top2.append(funcao(x[j], y[j])[1])
+	top1 = np.array(top1)
+	top2 = np.array(top2)
+	print(top1)
+	print(top2)
+
+	bottom = np.zeros_like(top1)
+	width = depth = 0.05
+
+	ax1.bar3d(x, y, bottom, width, depth, top1, shade=True, color='b')
+	ax1.set_title('Erro E')
+
+	ax2.bar3d(x, y, bottom, width, depth, top2, shade=True, color='r')
+	ax2.set_title('Erro F')
+
+	plt.show()
+
+def escuto(probErroE, probErroF, numeroErrosE, numeroErrosF):
 	rand = np.random.uniform()
 	if rand < probErroE:
 		numeroErrosE += 1 
@@ -26,11 +50,13 @@ def espera():
 		if (datetime.datetime.now() - inicio).total_seconds() > tempo:
 			break
 
-def simulacao(totalMensagens=1e6, probErroE=0.1, probErroF=0.1, esperar=False, imprime=False):
+def simulacao(probErroE=0.1, probErroF=0.1, totalMensagens=1e3, esperar=False, imprime=False):
 	contadorMensagens = 0
+	numeroErrosE = 0
+	numeroErrosF = 0
 	while True and contadorMensagens < totalMensagens:			
 		# escuto
-		estadoDaComunicacao = escuto(probErroE=probErroE, probErroF=probErroF)
+		estadoDaComunicacao = escuto(probErroE, probErroF, numeroErrosE, numeroErrosF)
 		# se silêncio -> transmite
 		if estadoDaComunicacao == "silencio":
 			if imprime:
@@ -44,7 +70,7 @@ def simulacao(totalMensagens=1e6, probErroE=0.1, probErroF=0.1, esperar=False, i
 			continue
 
 		# escuto
-		estadoDaComunicacao = escuto(probErroE=probErroE, probErroF=probErroF)
+		estadoDaComunicacao = escuto(probErroE, probErroF, numeroErrosE, numeroErrosF)
 		# se ok -> transmite controle
 		if estadoDaComunicacao == "silencio":
 			if imprime:
@@ -63,9 +89,12 @@ def simulacao(totalMensagens=1e6, probErroE=0.1, probErroF=0.1, esperar=False, i
 
 if __name__ == "__main__":
 	totalMensagens = 1e3 # total de mensagens a serem transmitidas
-	probsErroE = [0.2] # probabilidade de mensagem ser corrompida
-	probsErroF = [0.2] # probabilidade de mensagem ser perdida
-	
+	probsErroE = np.arange(0.05, 0.50, 0.05) # probabilidade de mensagem ser corrompida
+	probsErroF = np.arange(0.05, 0.50, 0.05) # probabilidade de mensagem ser perdida
+
+	plota3D(probsErroE, probsErroF, simulacao)
+	smkl
+
 	numeroErrosE_ = []
 	numeroErrosF_ = []
 
@@ -76,3 +105,12 @@ if __name__ == "__main__":
 
 	print(f"numero de erros E: {numeroErrosE_}")
 	print(f"numero de erros F: {numeroErrosF_}")
+
+	# plotagem
+	plt.plot(probsErroE, numeroErrosE_, label="Erros E")
+	plt.plot(probsErroF, numeroErrosF_, label="Erros F")
+	plt.xlabel("Probabilidade de erro")
+	plt.ylabel("Número de erros")
+	plt.legend()
+	plt.grid()
+	plt.show()
