@@ -1,6 +1,6 @@
 import datetime
 import numpy as np
-import matplotlib.pyplot as plt	
+import matplotlib.pyplot as plt
 
 def plota3D(a, b, funcao):
 	fig = plt.figure(figsize=(8, 3))
@@ -34,10 +34,8 @@ def plota3D(a, b, funcao):
 def escuto(probErroE, probErroF, numeroErrosE, numeroErrosF):
 	rand = np.random.uniform()
 	if rand < probErroE:
-		numeroErrosE += 1 
 		return "erroE"
 	elif rand > probErroE and rand < probErroF + probErroE:
-		numeroErrosF += 1
 		return "erroF"
 	else:
 		return "silencio"
@@ -54,9 +52,14 @@ def simulacao(probErroE=0.1, probErroF=0.1, totalMensagens=1e3, esperar=False, i
 	contadorMensagens = 0
 	numeroErrosE = 0
 	numeroErrosF = 0
-	while True and contadorMensagens < totalMensagens:			
+	while True and contadorMensagens < totalMensagens:
 		# escuto
 		estadoDaComunicacao = escuto(probErroE, probErroF, numeroErrosE, numeroErrosF)
+		# Soma Erros
+		if estadoDaComunicacao == "erroE":
+			numeroErrosE+=1
+		elif estadoDaComunicacao == "erroF":
+			numeroErrosF+=1
 		# se silêncio -> transmite
 		if estadoDaComunicacao == "silencio":
 			if imprime:
