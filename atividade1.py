@@ -1,9 +1,17 @@
+###	INTEGRANTES DO GRUPO ###
+# Ana Beatriz Lana Maciel Moreira Armond - 202165501B
+# Gabriel Maciel Furlong - 201965204AB
+# João Stephan Silva Maurício - 201965505b
+# Hiero Henrique Barcelos Costa - 202065136B
+# Arthur Malvacini Franchesqueti - 201865503B
+
+
 import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 
 def plota3D(a, b, funcao):
-	fig = plt.figure(figsize=(8, 3))
+	fig = plt.figure(figsize=(16, 8))
 	ax1 = fig.add_subplot(121, projection='3d')
 	ax2 = fig.add_subplot(122, projection='3d')
 
@@ -23,12 +31,19 @@ def plota3D(a, b, funcao):
 	bottom = np.zeros_like(top1)
 	width = depth = 0.05
 
-	ax1.bar3d(x, y, bottom, width, depth, top1, shade=True, color='b')
+	ax1.bar3d(x, y, bottom, width, depth, top1, shade=True, color='#d17a00')
 	ax1.set_title('Erro E')
+	ax1.set_xlabel("Prob. erro E")
+	ax1.set_ylabel("Prob. erro F")
+	ax1.set_zlabel("Número de erros")
 
-	ax2.bar3d(x, y, bottom, width, depth, top2, shade=True, color='r')
+	ax2.bar3d(x, y, bottom, width, depth, top2, shade=True, color='#0489B1')
 	ax2.set_title('Erro F')
+	ax2.set_xlabel("Prob. erro E")
+	ax2.set_ylabel("Prob. erro F")
+	ax2.set_zlabel("Número de erros")
 
+	plt.savefig('myfile.png', bbox_inches="tight")
 	plt.show()
 
 def escuto(probErroE, probErroF, numeroErrosE, numeroErrosF):
