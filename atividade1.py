@@ -10,7 +10,7 @@ import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plota3D(a, b, funcao):
+def plota3D(a, b, funcao, absoluto, totalMensagens):
 	fig = plt.figure(figsize=(16, 8))
 	ax1 = fig.add_subplot(121, projection='3d')
 	ax2 = fig.add_subplot(122, projection='3d')
@@ -21,15 +21,16 @@ def plota3D(a, b, funcao):
 	top1 = []
 	top2 = []
 	for j in range(len(x)):
-		top1.append(funcao(x[j], y[j])[0])
-		top2.append(funcao(x[j], y[j])[1])
+		top1.append(funcao(x[j], y[j], absoluto, totalMensagens)[0])
+		top2.append(funcao(x[j], y[j], absoluto, totalMensagens)[1])
 	top1 = np.array(top1)
 	top2 = np.array(top2)
-	print(top1)
-	print(top2)
 
 	bottom = np.zeros_like(top1)
 	width = depth = 0.05
+
+	ax1.view_init(elev=10, azim=-60)
+	ax2.view_init(elev=10, azim=-60)
 
 	ax1.bar3d(x, y, bottom, width, depth, top1, shade=True, color='#d17a00')
 	ax1.set_title('Erro E')
@@ -43,10 +44,15 @@ def plota3D(a, b, funcao):
 	ax2.set_ylabel("Prob. erro F")
 	ax2.set_zlabel("Número de erros")
 
-	plt.savefig('myfile.png', bbox_inches="tight")
-	plt.show()
+	if absoluto:
+		plt.suptitle('Número de erros absolutos')
+		plt.savefig('absoluto.pdf', bbox_inches="tight")
+	else:
+		plt.suptitle('Número de erros relativos (ao número total de mensagens)')
+		plt.savefig('relativo.pdf', bbox_inches="tight")
+	# plt.show()
 
-def escuto(probErroE, probErroF, numeroErrosE, numeroErrosF):
+def escuto(probErroE, probErroF):
 	rand = np.random.uniform()
 	if rand < probErroE:
 		return "erroE"
@@ -63,18 +69,18 @@ def espera():
 		if (datetime.datetime.now() - inicio).total_seconds() > tempo:
 			break
 
-def simulacao(probErroE=0.1, probErroF=0.1, totalMensagens=1e3, esperar=False, imprime=False):
+def simulacao(probErroE=0.1, probErroF=0.1, absoluto=True, totalMensagens=1e3, esperar=False, imprime=False):
 	contadorMensagens = 0
 	numeroErrosE = 0
 	numeroErrosF = 0
 	while True and contadorMensagens < totalMensagens:
 		# escuto
-		estadoDaComunicacao = escuto(probErroE, probErroF, numeroErrosE, numeroErrosF)
+		estadoDaComunicacao = escuto(probErroE, probErroF)
 		# Soma Erros
 		if estadoDaComunicacao == "erroE":
-			numeroErrosE+=1
+			numeroErrosE += 1
 		elif estadoDaComunicacao == "erroF":
-			numeroErrosF+=1
+			numeroErrosF += 1
 		# se silêncio -> transmite
 		if estadoDaComunicacao == "silencio":
 			if imprime:
@@ -88,7 +94,7 @@ def simulacao(probErroE=0.1, probErroF=0.1, totalMensagens=1e3, esperar=False, i
 			continue
 
 		# escuto
-		estadoDaComunicacao = escuto(probErroE, probErroF, numeroErrosE, numeroErrosF)
+		estadoDaComunicacao = escuto(probErroE, probErroF)
 		# se ok -> transmite controle
 		if estadoDaComunicacao == "silencio":
 			if imprime:
@@ -103,32 +109,15 @@ def simulacao(probErroE=0.1, probErroF=0.1, totalMensagens=1e3, esperar=False, i
 				espera()
 			continue
 
-	return numeroErrosE, numeroErrosF
+	if absoluto:
+		return numeroErrosE, numeroErrosF
+	else:
+		return numeroErrosE / totalMensagens, numeroErrosF / totalMensagens
 
 if __name__ == "__main__":
 	totalMensagens = 1e3 # total de mensagens a serem transmitidas
 	probsErroE = np.arange(0.05, 0.50, 0.05) # probabilidade de mensagem ser corrompida
 	probsErroF = np.arange(0.05, 0.50, 0.05) # probabilidade de mensagem ser perdida
 
-	plota3D(probsErroE, probsErroF, simulacao)
-	smkl
-
-	numeroErrosE_ = []
-	numeroErrosF_ = []
-
-	for i in range(len(probsErroE)):
-		numeroErrosE, numeroErrosF = simulacao(totalMensagens, probsErroE[i], probsErroF[i])
-		numeroErrosE_.append(numeroErrosE)
-		numeroErrosF_.append(numeroErrosF)
-
-	print(f"numero de erros E: {numeroErrosE_}")
-	print(f"numero de erros F: {numeroErrosF_}")
-
-	# plotagem
-	plt.plot(probsErroE, numeroErrosE_, label="Erros E")
-	plt.plot(probsErroF, numeroErrosF_, label="Erros F")
-	plt.xlabel("Probabilidade de erro")
-	plt.ylabel("Número de erros")
-	plt.legend()
-	plt.grid()
-	plt.show()
+	plota3D(probsErroE, probsErroF, simulacao, True, totalMensagens)
+	plota3D(probsErroE, probsErroF, simulacao, False, totalMensagens)	
