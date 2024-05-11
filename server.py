@@ -19,6 +19,7 @@ def handle_client(client_socket, address):
 				data = data[data.find('echo')+5:]
 				print('Sending response to client')
 				client_socket.send(data.encode())
+				
 	finally:
 		# close connection
 		print('Closing connection with client', address)
