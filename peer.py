@@ -14,10 +14,11 @@ def handle_connection(conn, addr, peer_id, connected_peers):
         message = conn.recv(1024).decode()
         if message.startswith("PEER_LIST;"):
             _, peers_data = message.split(";", 1)
-            new_peers = parse_peers(peers_data)
-            connected_peers.clear()
-            connected_peers.update(new_peers)
-            print(f"Updated peers list: {connected_peers}")
+            if peers_data:
+                new_peers = parse_peers(peers_data)
+                connected_peers.clear()
+                connected_peers.update(new_peers)
+                print(f"Updated peers list: {connected_peers}")
         else:
             print(f"Received message from {addr}: {message}")
     finally:
@@ -25,9 +26,10 @@ def handle_connection(conn, addr, peer_id, connected_peers):
 
 def parse_peers(peers_data):
     peers = {}
-    for peer_info in peers_data.split(";"):
-        peer_id, peer_ip, peer_port = peer_info.split(",")
-        peers[peer_id] = (peer_ip, int(peer_port))
+    if peers_data:
+        for peer_info in peers_data.split(";"):
+            peer_id, peer_ip, peer_port = peer_info.split(",")
+            peers[peer_id] = (peer_ip, int(peer_port))
     return peers
 
 def peer(peer_id, rendezvous_host='127.0.0.1', rendezvous_port=12345):

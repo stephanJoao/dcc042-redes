@@ -4,7 +4,9 @@ import threading
 peers = {}
 
 def format_peers():
-    return ";".join([f"{pid},{info[0]},{info[1]}" for pid, info in peers.items()])
+    peers_data = ";".join([f"{pid},{info[0]},{info[1]}" for pid, info in peers.items()])
+    print(f"Peers data: {peers_data}")
+    return peers_data
 
 def notify_all_peers():
     global peers
