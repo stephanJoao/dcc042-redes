@@ -1,3 +1,11 @@
+###	INTEGRANTES DO GRUPO ###
+# Ana Beatriz Lana Maciel Moreira Armond - 202165501B
+# Gabriel Maciel Furlong - 201965204AB
+# João Stephan Silva Maurício - 201965505b
+# Hiero Henrique Barcelos Costa - 202065136B
+# Arthur Malvacini Franchesqueti - 201865503B
+
+
 import socket
 import threading
 
