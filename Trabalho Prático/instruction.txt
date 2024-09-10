@@ -1,0 +1,38 @@
+# Instalando Bibliotecas
+pip install cryptography rsa
+
+# Executando o código
+- Terminal 1 (Servidor): python code.py
+  Esse terminal estará escutando as conexões na porta XXXX.
+
+- Terminal 2 (Cliente): python code.py
+  O cliente enviará uma mensagem para o servidor em 127.0.0.1 (localhost), e o servidor exibirá a mensagem recebida, reconstruída a partir dos fragmentos.
+
+No terminal do servidor, após a reconstrução da mensagem: 
+[*] Conexão recebida de ('127.0.0.1', PORT)
+[+] Mensagem recebida: Olá, esta é uma mensagem fragmentada e criptografada!
+
+No terminal do cliente, ele enviará os fragmentos criptografados ao servidor, e a comunicação será completada.
+
+______________________________________________
+
+Criptografia:
+
+- Criptografia Assimétrica (RSA): Usada para trocar chaves de sessão de forma segura entre os pares.
+- Criptografia Simétrica (AES): Utilizada para criptografar o conteúdo das mensagens devido à sua eficiência em termos de velocidade e segurança.
+
+----
+
+Componentes do Sistema:
+
+- Rede P2P Descentralizada: uma rede P2P onde não há um servidor central e cada nó (peer) pode atuar como cliente e servidor simultaneamente.
+
+- Mensagens e Comunicação: como os nós na rede se comunicam uns com os outros, utilizando sockets e protocolos específicos para envio e recebimento de dados.
+
+- Criptografia para Confidencialidade: processo de criptografia das mensagens, com uso de RSA para estabelecer uma chave segura e AES para criptografar os dados.
+
+- Fragmentação de Mensagens: processo de fragmentação das mensagens antes do envio, com um tamanho padrão dos fragmentos e a lógica por trás da escolha dos caminhos aleatórios para cada fragmento.
+
+- Encaminhamento Aleatório (Random Walks): ação de um algoritmo de encaminhamento aleatório, traznedo como vantagem ocultar a origem e o destino das mensagens, e como isso contribui para o anonimato da rede.
+
+- Reunião dos Fragmentos no Destino: o destinatário reconstrói a mensagem a partir dos fragmentos recebidos, garantindo a integridade e a autenticidade através de índices ou assinaturas digitais.
