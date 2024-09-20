@@ -23,9 +23,9 @@ def handle_connection(conn, addr, peer_id, connected_peers):
                 new_peers = parse_peers(peers_data)
                 connected_peers.clear()
                 connected_peers.update(new_peers)
-                print(f"Updated peers list: {connected_peers}\n> ")
+                print(f"Updated peers list: {connected_peers}")
         else:
-            print(f"[{peer_id}]: {message}\n> ")
+            print(f"[chat]: {message}")
     finally:
         conn.close()
 
@@ -88,5 +88,5 @@ if __name__ == "__main__":
     print(f"Peer ID: {peer_id}")
 
     while True:
-        message = input()
+        message = input("> ")
         send_message(connected_peers, message)
