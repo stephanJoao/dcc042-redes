@@ -6,7 +6,7 @@ peers = {}
 
 def format_peers():
     peers_data = ";".join(
-        [f"{pid},{info[0]},{info[1]}" for pid, info in peers.items()]
+        [f"{pid},{info[0]},{info[1]},{info[2]}" for pid, info in peers.items()]
     )
     print(f"Peers data: {peers_data}")
     return peers_data
@@ -15,7 +15,7 @@ def format_peers():
 def notify_all_peers():
     global peers
     peer_list = format_peers()
-    for peer_id, (peer_ip, peer_port) in peers.items():
+    for peer_id, (peer_ip, peer_port, public_key) in peers.items():
         try:
             conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             conn.connect((peer_ip, peer_port))
@@ -29,8 +29,8 @@ def handle_peer(conn, addr):
     global peers
     try:
         peer_info = conn.recv(1024).decode()
-        peer_id, peer_ip, peer_port = peer_info.split(",")
-        peers[peer_id] = (peer_ip, int(peer_port))
+        peer_id, peer_ip, peer_port, public_key = peer_info.split(",")
+        peers[peer_id] = (peer_ip, int(peer_port), public_key)
         print(f"Peer {peer_id} connected from {addr}")
 
         # Notify all peers about the new list

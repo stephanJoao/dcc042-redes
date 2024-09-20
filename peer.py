@@ -3,6 +3,8 @@ import threading
 import uuid
 import random
 
+from sympy import public
+
 
 def listen_for_connections(peer_socket, peer_id, connected_peers):
     peer_socket.listen(5)
@@ -34,12 +36,14 @@ def parse_peers(peers_data):
     peers = {}
     if peers_data:
         for peer_info in peers_data.split(";"):
-            peer_id, peer_ip, peer_port = peer_info.split(",")
-            peers[peer_id] = (peer_ip, int(peer_port))
+            peer_id, peer_ip, peer_port, public_key = peer_info.split(",")
+            peers[peer_id] = (peer_ip, int(peer_port), public_key)
     return peers
 
 
-def peer(peer_id, rendezvous_host="127.0.0.1", rendezvous_port=12345):
+def peer(
+    peer_id, public_key, rendezvous_host="127.0.0.1", rendezvous_port=12345
+):
     peer_port = random.randint(10000, 60000)
     peer_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     peer_socket.bind(("0.0.0.0", peer_port))
@@ -54,7 +58,7 @@ def peer(peer_id, rendezvous_host="127.0.0.1", rendezvous_port=12345):
     rendezvous_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     rendezvous_socket.connect((rendezvous_host, rendezvous_port))
     rendezvous_socket.sendall(
-        f"{peer_id},{socket.gethostbyname(socket.gethostname())},{peer_port}"
+        f"{peer_id},{socket.gethostbyname(socket.gethostname())},{peer_port},{public_key}"
         .encode()
     )
 
@@ -84,8 +88,12 @@ def send_message(connected_peers, message):
 
 if __name__ == "__main__":
     peer_id = str(uuid.uuid4())[:6]
-    connected_peers = peer(peer_id)
-    print(f"Peer ID: {peer_id}")
+    public_key = "123456"
+    private_key = "654321"
+    connected_peers = peer(peer_id, public_key)
+    print(
+        f"Peer ID: {peer_id}\nPublic key{public_key}\nPrivate key{private_key}"
+    )
 
     while True:
         message = input("> ")
