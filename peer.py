@@ -2,9 +2,14 @@ import socket
 import threading
 import uuid
 import random
-
+from encryptionRSA import *
 from sympy import public
 
+def pick_random_key(d):
+    # Get all the keys from the dictionary
+    keys = list(d.keys())
+    # Return a random choice from the keys
+    return random.choice(keys)
 
 def listen_for_connections(peer_socket, peer_id, connected_peers):
     peer_socket.listen(5)
@@ -27,7 +32,13 @@ def handle_connection(conn, addr, peer_id, connected_peers):
                 connected_peers.update(new_peers)
                 print(f"Updated peers list: {connected_peers}")
         else:
-            print(f"[chat]: {message}")
+            if str(message[1:size]) == str(peer_id):
+                encryptMsg = message[size:]
+                private_key = read_private_key(peer_id)
+                trueMessage = decrypt_message(private_key, encryptMsg)
+                print(f"[chat]: mensagem a ser recebida -> {trueMessage}")
+            else:
+                print(f"[chat]: mensagem a ser recebida -> {message[size:]}")
     finally:
         conn.close()
 
@@ -83,18 +94,33 @@ def peer_connection(addr, message):
 
 def send_message(connected_peers, message):
     for pid, addr in connected_peers.items():
-        threading.Thread(target=peer_connection, args=(addr, message)).start()
+        realAddr = addr[:-1]
+        realAddr=tuple(realAddr)
+        threading.Thread(target=peer_connection, args=(realAddr, message)).start()
 
 
 if __name__ == "__main__":
     peer_id = str(uuid.uuid4())[:6]
-    public_key = "123456"
-    private_key = "654321"
+    
+    private_key,public_key = generate_keys()
+    # private_key, public_key= generate_keys()
+    save_public_key(public_key, peer_id)
+    save_private_key(private_key, peer_id)
     connected_peers = peer(peer_id, public_key)
     print(
         f"Peer ID: {peer_id}\nPublic key{public_key}\nPrivate key{private_key}"
     )
-
     while True:
         message = input("> ")
-        send_message(connected_peers, message)
+        randPeer_id = pick_random_key(connected_peers)
+        randPeerKey = read_public_key(randPeer_id)
+        message = encrypt_message(randPeerKey,message)
+        size = len(randPeer_id)+1
+        trueMessage = str(size)+str(randPeer_id)+str(message)
+        send_message(connected_peers, trueMessage)
+
+
+#função encripta com chave publica de outros
+#função decripta mensagem quando chega
+#função encripta mensagem com chave de sessão
+#Função gera chave de seção
