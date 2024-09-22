@@ -60,3 +60,19 @@ def decrypt_message_aes(encrypted_message: bytes, key: bytes):
 # Função para fragmentar uma mensagem em partes menores, com tamanho definido
 def fragment_message(message, fragment_size=256):
     return [message[i:i+fragment_size] for i in range(0, len(message), fragment_size)]
+
+# Função para remontar e descriptografar os fragmentos
+def reassemble_and_decrypt_fragments(fragments, aes_key):
+    # Ordena os fragmentos recebidos com base no índice (antes do ':')
+    fragments.sort(key=lambda x: int(x.split(':')[0]))
+    
+    # Remove os índices e descriptografa cada fragmento
+    decrypted_fragments = []
+    for fragment in fragments:
+        index, encrypted_fragment = fragment.split(':', 1)  # Separa o índice
+        decrypted_fragment = decrypt_message_aes(encrypted_fragment.encode(), aes_key)  # Descriptografa o fragmento
+        decrypted_fragments.append(decrypted_fragment)
+    
+    # Junta os fragmentos em uma única string
+    complete_message = ''.join(decrypted_fragments)
+    return complete_message
