@@ -92,12 +92,25 @@ def peer_connection(addr, message):
         print(f"Could not connect to peer at {addr}: {e}")
 
 
-def send_message(connected_peers, message):
-    for pid, addr in connected_peers.items():
-        realAddr = addr[:-1]
-        realAddr=tuple(realAddr)
-        threading.Thread(target=peer_connection, args=(realAddr, message)).start()
+def hopMessage():
+    print("test")
 
+def send_message(connected_peers, message):
+    #Propriedade para verificar se ID foi encontrado
+    IdEncontrado = False
+    print("Para qual Peer Id deseja enviar a mensagem:")
+    Destinatario = input()
+    for pid, addr in connected_peers.items():
+        #Se ID igual definido envia mensagem para o destinatario
+        if(pid == Destinatario):
+            realAddr = addr[:-1]
+            realAddr=tuple(realAddr)    
+            threading.Thread(target=peer_connection, args=(realAddr, message)).start()
+            IdEncontrado = True
+            print("Mensagem enviada")
+    #Caso nao tenha achado o ID retorna mensagem         
+    if(IdEncontrado != True):
+        print("ID não encontrado")            
 
 if __name__ == "__main__":
     peer_id = str(uuid.uuid4())[:6]
