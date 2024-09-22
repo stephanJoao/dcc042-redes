@@ -5,11 +5,14 @@ import random
 from encryptionRSA import *
 from sympy import public
 
-def pick_random_key(d):
+def pick_random_key(d,destinatario):
     # Get all the keys from the dictionary
     keys = list(d.keys())
     # Return a random choice from the keys
-    return random.choice(keys)
+    hops = destinatario
+    while(hops == destinatario):
+        hops = random.choice(keys)
+    return hops
 
 def listen_for_connections(peer_socket, peer_id, connected_peers):
     peer_socket.listen(5)
@@ -32,13 +35,26 @@ def handle_connection(conn, addr, peer_id, connected_peers):
                 connected_peers.update(new_peers)
                 print(f"Updated peers list: {connected_peers}")
         else:
-            if str(message[1:size]) == str(peer_id):
-                encryptMsg = message[size:]
-                private_key = read_private_key(peer_id)
-                trueMessage = decrypt_message(private_key, encryptMsg)
-                print(f"[chat]: mensagem a ser recebida -> {trueMessage}")
+            sizeId= int(message[0])
+            sizeHops =int(message[-1])
+            quantHops =int(message[-int(sizeHops)-1:-1])
+            
+            #Verifica se é apenas um Hop 
+            if(quantHops>0):
+                print(f"HOP -> {message}")
+                message = message[:-int(sizeHops)-1]
+                quantHops = quantHops - 1
+                sizeHops = len(str(quantHops))
+                message = message + str(quantHops) + str(sizeHops)
+                hopMessage(connected_peers,message,str(message[1:sizeId]))
             else:
-                print(f"[chat]: mensagem a ser recebida -> {message[size:]}")
+                if str(message[1:sizeId]) == str(peer_id):
+                    #encryptMsg = message[sizeId::-int(sizeHops)-1]
+                    #private_key = read_private_key(peer_id)
+                    #trueMessage = decrypt_message(private_key, encryptMsg)
+                    print(f"[chat]: mensagem a ser recebida -> {message}")
+                else:
+                    print(f"[chat]: mensagem a ser recebida -> {message}")
     finally:
         conn.close()
 
@@ -92,20 +108,41 @@ def peer_connection(addr, message):
         print(f"Could not connect to peer at {addr}: {e}")
 
 
-def hopMessage():
-    print("test")
-
+def hopMessage(connected_peers,trueMessage,destinatario):
+    destinatoriohop = pick_random_key(connected_peers,destinatario)
+    print("Destinatario")
+    print(destinatoriohop)
+    realAddr=tuple(connected_peers[destinatoriohop][:-1])
+    peer_connection(realAddr,trueMessage)
+    #threading.Thread(target=peer_connection, args=(realAddr, trueMessage)).start()
+    
 def send_message(connected_peers, message):
     #Propriedade para verificar se ID foi encontrado
     IdEncontrado = False
     print("Para qual Peer Id deseja enviar a mensagem:")
-    Destinatario = input()
+    destinatario = input()
+ 
     for pid, addr in connected_peers.items():
         #Se ID igual definido envia mensagem para o destinatario
-        if(pid == Destinatario):
+        if(pid == destinatario):
             realAddr = addr[:-1]
-            realAddr=tuple(realAddr)    
-            threading.Thread(target=peer_connection, args=(realAddr, message)).start()
+            realAddr=tuple(realAddr)
+            #vai enviar a chave de sessao a ser implementado posteriomente
+            #threading.Thread(target=peer_connection, args=(realAddr,"chave")).start()
+            
+            #randPeerKey = read_public_key(pid)
+            #message = encrypt_message(randPeerKey,message)
+            sizeId = len(pid)+1
+            
+            trueMessage = str(sizeId)+str(pid)+str(message) 
+            #Contador a ser passado para o HOP 
+            contHop = len(connected_peers.items())-2
+            lenHop = len(str(contHop))
+            trueMessage = trueMessage + str(contHop) + str(lenHop) 
+            hopMessage(connected_peers,trueMessage,destinatario)
+            
+            #Envia mensagem  
+            threading.Thread(target=peer_connection, args=(realAddr, trueMessage)).start()
             IdEncontrado = True
             print("Mensagem enviada")
     #Caso nao tenha achado o ID retorna mensagem         
@@ -125,12 +162,7 @@ if __name__ == "__main__":
     )
     while True:
         message = input("> ")
-        randPeer_id = pick_random_key(connected_peers)
-        randPeerKey = read_public_key(randPeer_id)
-        message = encrypt_message(randPeerKey,message)
-        size = len(randPeer_id)+1
-        trueMessage = str(size)+str(randPeer_id)+str(message)
-        send_message(connected_peers, trueMessage)
+        send_message(connected_peers, message)
 
 
 #função encripta com chave publica de outros
