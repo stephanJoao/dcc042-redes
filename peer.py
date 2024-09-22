@@ -46,15 +46,21 @@ def handle_connection(conn, addr, peer_id, connected_peers):
                 quantHops = quantHops - 1
                 sizeHops = len(str(quantHops))
                 message = message + str(quantHops) + str(sizeHops)
-                hopMessage(connected_peers,message,str(message[1:sizeId]))
+                if quantHops != 0:
+                    hopMessage(connected_peers,message,str(message[1:sizeId]))
+                else:
+                    realAddr=tuple(connected_peers[message[1:sizeId]][:-1])
+                    threading.Thread(target=peer_connection, args=(realAddr, message)).start()
             else:
                 if str(message[1:sizeId]) == str(peer_id):
-                    #encryptMsg = message[sizeId::-int(sizeHops)-1]
-                    #private_key = read_private_key(peer_id)
-                    #trueMessage = decrypt_message(private_key, encryptMsg)
-                    print(f"[chat]: mensagem a ser recebida -> {message}")
+                    print(message)
+                    encryptMsg = message[sizeId:-int(sizeHops)-1]
+                    private_key = read_private_key(peer_id)
+                    trueMessage = decrypt_message(private_key, encryptMsg)
+                    print(trueMessage)
+                    print(f"[chat]: mensagem recebida original-> {trueMessage}")
                 else:
-                    print(f"[chat]: mensagem a ser recebida -> {message}")
+                    print(f"[chat]: mensagemrecebida com criptografia-> {message}")
     finally:
         conn.close()
 
@@ -102,7 +108,9 @@ def peer_connection(addr, message):
     try:
         peer_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         peer_socket.connect(addr)
-        peer_socket.sendall(message.encode())
+        sizeId= int(message[0])
+        realAddr=tuple(connected_peers[message[1:sizeId]][:-1])
+        peer_socket.sendto(message.encode(),realAddr)
         peer_socket.close()
     except Exception as e:
         print(f"Could not connect to peer at {addr}: {e}")
@@ -114,7 +122,6 @@ def hopMessage(connected_peers,trueMessage,destinatario):
     print(destinatoriohop)
     realAddr=tuple(connected_peers[destinatoriohop][:-1])
     peer_connection(realAddr,trueMessage)
-    #threading.Thread(target=peer_connection, args=(realAddr, trueMessage)).start()
     
 def send_message(connected_peers, message):
     #Propriedade para verificar se ID foi encontrado
@@ -130,19 +137,19 @@ def send_message(connected_peers, message):
             #vai enviar a chave de sessao a ser implementado posteriomente
             #threading.Thread(target=peer_connection, args=(realAddr,"chave")).start()
             
-            #randPeerKey = read_public_key(pid)
-            #message = encrypt_message(randPeerKey,message)
+            randPeerKey = read_public_key(pid)
+            message = encrypt_message(randPeerKey,message)
             sizeId = len(pid)+1
             
             trueMessage = str(sizeId)+str(pid)+str(message) 
             #Contador a ser passado para o HOP 
-            contHop = len(connected_peers.items())-2
+            contHop = len(connected_peers.items())-1
             lenHop = len(str(contHop))
             trueMessage = trueMessage + str(contHop) + str(lenHop) 
             hopMessage(connected_peers,trueMessage,destinatario)
             
             #Envia mensagem  
-            threading.Thread(target=peer_connection, args=(realAddr, trueMessage)).start()
+            # threading.Thread(target=peer_connection, args=(realAddr, trueMessage)).start()
             IdEncontrado = True
             print("Mensagem enviada")
     #Caso nao tenha achado o ID retorna mensagem         
