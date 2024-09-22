@@ -53,11 +53,9 @@ def handle_connection(conn, addr, peer_id, connected_peers):
                     threading.Thread(target=peer_connection, args=(realAddr, message)).start()
             else:
                 if str(message[1:sizeId]) == str(peer_id):
-                    print(message)
                     encryptMsg = message[sizeId:-int(sizeHops)-1]
                     private_key = read_private_key(peer_id)
                     trueMessage = decrypt_message(private_key, encryptMsg)
-                    print(trueMessage)
                     print(f"[chat]: mensagem recebida original-> {trueMessage}")
                 else:
                     print(f"[chat]: mensagemrecebida com criptografia-> {message}")
