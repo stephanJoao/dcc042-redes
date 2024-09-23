@@ -2,7 +2,7 @@
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 from binascii import hexlify, unhexlify
-
+import os
 
 # Function to generate RSA public and private keys
 def generate_keys():
@@ -34,33 +34,41 @@ def decrypt_message(private_key, encrypted_message):
 
 def save_private_key(private_key, peer_id, pwd=b'secret'):
     # Save private key with encryption and protection parameters
-    with open(f"myprivatekey{peer_id}.pem", "wb") as f:
-        data = private_key.export_key(passphrase=pwd,
-                                      pkcs=8,
-                                      protection='PBKDF2WithHMAC-SHA512AndAES256-CBC',
-                                      prot_params={'iteration_count': 131072})
-        f.write(data)
+    if not os.path.exists(f"pasta/{peer_id}/"):
+        os.makedirs(f"pasta/{peer_id}/")
+    f = open(f"pasta/{peer_id}/myprivatekey{peer_id}.pem", "wb")
+    data = private_key.export_key(passphrase=pwd,
+                                pkcs=8,
+                                protection='PBKDF2WithHMAC-SHA512AndAES256-CBC',
+                                prot_params={'iteration_count': 131072})
+    f.write(data)
 
 # Function to save the public key
 def save_public_key(public_key, peer_id):
     # Save public key in a PEM file without encryption
-    with open(f"mypublickey{peer_id}.pem", "wb") as f:
-        data = public_key.export_key()
-        f.write(data)
+    if not os.path.exists(f"pasta/{peer_id}/"):
+        os.makedirs(f"pasta/{peer_id}/")
+    f = open(f"pasta/{peer_id}/mypublickey{peer_id}.pem", "wb") 
+    data = public_key.export_key()
+    f.write(data)
 
 def read_private_key(peer_id, pwd=b'secret'):
     # Read and import the private key from the file
-    with open(f"myprivatekey{peer_id}.pem", "rb") as f:
-        data = f.read()
-        private_key = RSA.import_key(data, passphrase=pwd)
+    if not os.path.exists(f"pasta/{peer_id}/"):
+        os.makedirs(f"pasta/{peer_id}/")
+    f = open(f"pasta/{peer_id}/myprivatekey{peer_id}.pem", "rb") 
+    data = f.read()
+    private_key = RSA.import_key(data, passphrase=pwd)
     return private_key
 
 # Function to read the public key
 def read_public_key(peer_id):
     # Read and import the public key from the file
-    with open(f"mypublickey{peer_id}.pem", "rb") as f:
-        data = f.read()
-        public_key = RSA.import_key(data)
+    if not os.path.exists(f"pasta/{peer_id}/"):
+        os.makedirs(f"pasta/{peer_id}/")
+    f = open(f"pasta/{peer_id}/mypublickey{peer_id}.pem", "rb") 
+    data = f.read()
+    public_key = RSA.import_key(data)
     return public_key
 
 
