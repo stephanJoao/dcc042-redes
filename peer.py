@@ -6,6 +6,8 @@ from encryptionRSA import *
 from encryptionAES import *
 from sympy import public
 import os
+
+
 def pick_random_key(d,destinatario):
     # Get all the keys from the dictionary
     keys = list(d.keys())
@@ -15,17 +17,17 @@ def pick_random_key(d,destinatario):
         hops = random.choice(keys)
     return hops
 
-def listen_for_connections(peer_socket, peer_id, connected_peers):
+def listen_for_connections(peer_socket, peer_id, connected_peers,arrayList):
     peer_socket.listen(5)
     while True:
         conn, addr = peer_socket.accept()
         threading.Thread(
             target=handle_connection,
-            args=(conn, addr, peer_id, connected_peers),
+            args=(conn, addr, peer_id, connected_peers,arrayList),
         ).start()
 
 
-def handle_connection(conn, addr, peer_id, connected_peers):
+def handle_connection(conn, addr, peer_id, connected_peers, arrayList):
     try:
         message = conn.recv(1024).decode()
         print(f"mensagem no handle: {message}")
@@ -57,7 +59,6 @@ def handle_connection(conn, addr, peer_id, connected_peers):
                     peer_connection(realAddr,message)
             else:
                 if "SK:" in message:
-                    print(str(message[1:sizeidpeer1]) +" and "+ str(peer_id))
                     data = message.split("SK:")
                     decryptMessage = data[1]
                     private_key = read_private_key(peer_id)
@@ -66,7 +67,6 @@ def handle_connection(conn, addr, peer_id, connected_peers):
                     sessioKey = bytes.fromhex(trueMessage)
                     with open(f'pasta/{peer_id}/aes_{message[1:sizeidpeer1]}_{message[1+sizeidpeer1:sizeidpeer1+sizeidpeer2]}_key.key', 'wb') as key_file:
                         key_file.write(sessioKey)
-                    print("escrito")
                 else:
                     if str(message[1:sizeidpeer1]) == str(peer_id):
                         encryptMsg = message[sizeidpeer1+sizeidpeer2:-int(sizeHops)-1]
@@ -74,19 +74,14 @@ def handle_connection(conn, addr, peer_id, connected_peers):
                         with open(f'pasta/{message[1+sizeidpeer1:sizeidpeer1+sizeidpeer2]}/aes_{message[1:sizeidpeer1]}_{message[1+sizeidpeer1:sizeidpeer1+sizeidpeer2]}_key.key', 'rb') as key_file:
                             sessioKey = key_file.read()
 
-                        print(f"sessioKey: {sessioKey}")
-                        print(f"sessioKey type: {type(sessioKey)}")
-
-                        print(f"encryptMsg: {encryptMsg}")
-                        print(f"encryptMsg type: {type(encryptMsg)}")
                         encryptMsg = bytes.fromhex(encryptMsg)
-                        print(f"encryptMsg: {encryptMsg}")
-                        print(f"encryptMsg type: {type(encryptMsg)}")
-                        
+
                         decryptMessage=decrypt_message_aes(encryptMsg,sessioKey) #.encode(encoding="utf-8")
                         private_key = read_private_key(peer_id)
                         trueMessage = decrypt_message(private_key, decryptMessage)
+                        arrayList.append(trueMessage)       
                         print(f"[chat]: mensagem recebida original-> {trueMessage}")
+                        print(arrayList)
                     else:
                         print(f"[chat]: mensagemrecebida com criptografia-> {message}")
     finally:
@@ -108,11 +103,11 @@ def peer(
     peer_port = random.randint(10000, 60000)
     peer_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     peer_socket.bind(("0.0.0.0", peer_port))
-
+    arrayList = []
     connected_peers = {}
     threading.Thread(
         target=listen_for_connections,
-        args=(peer_socket, peer_id, connected_peers),
+        args=(peer_socket, peer_id, connected_peers,arrayList),
     ).start()
 
     # Connect to rendezvous server
@@ -180,6 +175,9 @@ def send_message(connected_peers, message,peer_id):
             trueMessage = str(sizeId)+str(pid)+str(peer_idSize)+peer_id+"SK:"+str(message1) + str(0) + str(1)
             peer_connection(realAddr,trueMessage)
 
+            #separação
+            # messages = fragment_message(message)
+            # for eachMessage in messages
             message = encrypt_message(randPeerKey,message)
             message = encrypt_message_aes(message,session_key)
             message = message.hex()
@@ -211,9 +209,16 @@ if __name__ == "__main__":
     while True:
         message = input("> ")
         send_message(connected_peers, message,peer_id)
+        
 
 
 #função encripta com chave publica de outros
 #função decripta mensagem quando chega
 #função encripta mensagem com chave de sessão
 #Função gera chave de seção
+
+
+#funcao de fragmentacao "id""fragmento""tamanho"
+#func de desfragmentacao 
+#func de ordenacao
+#verifica completa fragmento
