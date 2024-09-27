@@ -24,7 +24,6 @@ def encrypt_message(public_key, message):
 # Function to decrypt a message using the private key
 def decrypt_message(private_key, encrypted_message):
     # Convert the encrypted message from hexadecimal to binary
-    print(f"decrypt_message dentro do RSA {encrypted_message}")
     encrypted_bytes = unhexlify(encrypted_message)
     # Create a PKCS1_OAEP cipher object with the private key
 
@@ -32,7 +31,6 @@ def decrypt_message(private_key, encrypted_message):
     # Decrypt the message
     decrypted = cipher_rsa.decrypt(encrypted_bytes)
     # Return the decrypted message as a UTF-8 string
-    print(f"decrypt_message dentro do RSA  no fim {decrypted.decode('utf-8')}")
 
     return decrypted.decode('utf-8')
 

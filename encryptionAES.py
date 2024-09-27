@@ -25,11 +25,11 @@ def encrypt_message_aes(message: str, key: bytes):
         iv = os.urandom(16)  # Gera um IV (vetor de inicialização) aleatório de 16 bytes
         cipher = Cipher(algorithms.AES(key), modes.CFB(iv), backend=default_backend())
         encryptor = cipher.encryptor()
-        
         # Padding PKCS7 para ajustar o tamanho da mensagem ao bloco AES
         padder = padding.PKCS7(algorithms.AES.block_size).padder()
         padded_data = padder.update(message.encode()) + padder.finalize()
-        
+
+
         encrypted_message = encryptor.update(padded_data) + encryptor.finalize()
         # Retorna o IV concatenado com a mensagem criptografada
         return iv + encrypted_message
@@ -45,12 +45,9 @@ def decrypt_message_aes(encrypted_message: bytes, key: bytes):
     encrypted_message = encrypted_message[16:]
     cipher = Cipher(algorithms.AES(key), modes.CFB(iv), backend=default_backend())
     decryptor = cipher.decryptor()
-    
     decrypted_padded_message = decryptor.update(encrypted_message) + decryptor.finalize()
-    
     unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
     decrypted_message = unpadder.update(decrypted_padded_message) + unpadder.finalize()
-    
     return decrypted_message.decode()
 
 # Função para fragmentar uma mensagem em partes menores, com tamanho definido
