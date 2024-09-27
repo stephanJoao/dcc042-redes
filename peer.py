@@ -6,7 +6,7 @@ from encryptionRSA import *
 from encryptionAES import *
 from sympy import public
 import os
-
+import time
 
 def pick_random_key(d,destinatario):
     # Get all the keys from the dictionary
@@ -21,6 +21,12 @@ def listen_for_connections(peer_socket, peer_id, connected_peers,arrayList):
     peer_socket.listen(5)
     while True:
         conn, addr = peer_socket.accept()
+        for key in connected_peers.keys():
+            if not arrayList.__contains__(key):
+                arrayList[key] = []
+            else:
+                arrayList[key] = arrayList[key]
+        # handle_connection(conn, addr, peer_id, connected_peers,arrayList)
         threading.Thread(
             target=handle_connection,
             args=(conn, addr, peer_id, connected_peers,arrayList),
@@ -30,16 +36,18 @@ def listen_for_connections(peer_socket, peer_id, connected_peers,arrayList):
 def handle_connection(conn, addr, peer_id, connected_peers, arrayList):
     try:
         message = conn.recv(1024).decode()
-        print(f"mensagem no handle: {message}")
+
         if message.startswith("PEER_LIST;"):
             _, peers_data = message.split(";", 1)
             if peers_data:
-                new_peers = parse_peers(peers_data)
+                new_peers = parse_peers1(peers_data)
+                arrayList = parse_peers2(peers_data,arrayList)
                 connected_peers.clear()
                 connected_peers.update(new_peers)
                 print(f"Updated peers list: {connected_peers}")
         
         else:
+
             sizeidpeer1= int(message[0])
             sizeidpeer2= int(message[sizeidpeer1:sizeidpeer1+1])
             sizeHops =int(message[-1])
@@ -61,39 +69,74 @@ def handle_connection(conn, addr, peer_id, connected_peers, arrayList):
                 if "SK:" in message:
                     data = message.split("SK:")
                     decryptMessage = data[1]
+                    idSender = message[1+sizeidpeer1:sizeidpeer1+sizeidpeer2]
                     private_key = read_private_key(peer_id)
                     encryptMsg = decryptMessage[:-int(sizeHops)-1]
                     trueMessage = decrypt_message(private_key, encryptMsg)
                     sessioKey = bytes.fromhex(trueMessage)
-                    with open(f'pasta/{peer_id}/aes_{message[1:sizeidpeer1]}_{message[1+sizeidpeer1:sizeidpeer1+sizeidpeer2]}_key.key', 'wb') as key_file:
+                    sKFrag = {"sessionkey": sessioKey, "idSender": idSender}
+                    arrayList[idSender].append(sKFrag)
+                    arrayList[idSender].append([])
+                    print(arrayList)
+                    print(arrayList[idSender])
+                    with open(f'pasta/{peer_id}/aes_{message[1:sizeidpeer1]}_{idSender}_key.key', 'wb') as key_file:
                         key_file.write(sessioKey)
                 else:
                     if str(message[1:sizeidpeer1]) == str(peer_id):
+                        print(f"{message}\n")
                         encryptMsg = message[sizeidpeer1+sizeidpeer2:-int(sizeHops)-1]
-                        sessioKey = ""
-                        with open(f'pasta/{message[1+sizeidpeer1:sizeidpeer1+sizeidpeer2]}/aes_{message[1:sizeidpeer1]}_{message[1+sizeidpeer1:sizeidpeer1+sizeidpeer2]}_key.key', 'rb') as key_file:
-                            sessioKey = key_file.read()
-
-                        encryptMsg = bytes.fromhex(encryptMsg)
-
-                        decryptMessage=decrypt_message_aes(encryptMsg,sessioKey) #.encode(encoding="utf-8")
-                        private_key = read_private_key(peer_id)
-                        trueMessage = decrypt_message(private_key, decryptMessage)
-                        arrayList.append(trueMessage)       
-                        print(f"[chat]: mensagem recebida original-> {trueMessage}")
+                        print(encryptMsg)
+                       
+                        idSender = message[1+sizeidpeer1:sizeidpeer1+sizeidpeer2]
+                        idReceiver = message[1:sizeidpeer1]
+                        idFragSize = int(encryptMsg[0])
+                        numOfFragsSize = int(encryptMsg[-1])
+                        idFrag = int(encryptMsg[1:idFragSize])
+                        numOfFrags = int(encryptMsg[-int(numOfFragsSize)-1:-1])
+                        fragMessage = encryptMsg[idFragSize:-int(numOfFragsSize)-1]
+                        fragment = {
+                            'id': idFrag,
+                            'fragment': str(fragMessage)
+                        }
                         print(arrayList)
+                        arrayList[idSender][-1].append(fragment)
+                        print(arrayList[idSender][-1])       
+                        if verify_fragments(arrayList[idSender][-1],numOfFrags):
+                            fragmentList = organize_fragments(arrayList[idSender][-1])
+                            trueFragMsg = []
+                            for each in fragmentList:
+                                trueFragMsg.append(each["fragment"])
+                            complete_message = ''.join(trueFragMsg)
+                            print(f"[chat]: mensagem recebida original-> {complete_message}")
+                            if len(arrayList[idSender]) > numOfFrags:
+                                
+                                arrayList[idSender] = arrayList[idSender][numOfFrags:]
+                            else:
+                                arrayList[idSender] = []
+                        else:
+                            print(f"Colecting fragments")
                     else:
                         print(f"[chat]: mensagemrecebida com criptografia-> {message}")
     finally:
         conn.close()
 
 
-def parse_peers(peers_data):
+def parse_peers1(peers_data):
     peers = {}
     if peers_data:
         for peer_info in peers_data.split(";"):
             peer_id, peer_ip, peer_port, public_key = peer_info.split(",")
             peers[peer_id] = (peer_ip, int(peer_port), public_key)
+    return peers
+
+def parse_peers2(peers_data, arrayList):
+    peers = {}
+    if peers_data:
+        for peer_info in peers_data.split(";"):
+            peer_id, peer_ip, peer_port, public_key = peer_info.split(",")
+            peers[peer_id] = []
+        for key in arrayList.keys():
+            peers[key] = arrayList[key]
     return peers
 
 
@@ -103,7 +146,7 @@ def peer(
     peer_port = random.randint(10000, 60000)
     peer_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     peer_socket.bind(("0.0.0.0", peer_port))
-    arrayList = []
+    arrayList = {}
     connected_peers = {}
     threading.Thread(
         target=listen_for_connections,
@@ -119,7 +162,8 @@ def peer(
     )
 
     peers_data = rendezvous_socket.recv(1024).decode()
-    connected_peers.update(parse_peers(peers_data))
+    connected_peers.update(parse_peers1(peers_data))
+    arrayList.update(parse_peers2(peers_data,arrayList))
     print(f"Initial peers: {connected_peers}\n> ")
 
     rendezvous_socket.close()
@@ -146,7 +190,26 @@ def hopMessage(connected_peers,trueMessage,destinatario):
     print(destinatoriohop)
     realAddr=tuple(connected_peers[destinatoriohop][:-1])
     peer_connection(realAddr,trueMessage)
-    
+
+def send_messageFrags(messages,sizeId,pid,peer_idSize,peer_id,contHop,lenHop):
+    time.sleep(3)
+    for eachMessage in messages:
+                auxMessage = eachMessage["idSize"]+eachMessage["id"] + eachMessage["fragment"]+eachMessage["numMaxOfFrags"]+eachMessage["sizeNumMaxOfFrags"]
+                print(f"{auxMessage}\n")
+                
+                # auxMessage = encrypt_message(randPeerKey,auxMessage)
+                # print(f"{auxMessage}\n")
+                # auxMessage = encrypt_message_aes(message,session_key)
+                # print(f"{auxMessage}\n")
+                # auxMessage = auxMessage.hex()
+                # print(f"{auxMessage}\n")
+
+                trueauxMessage = str(sizeId)+str(pid)+str(peer_idSize)+peer_id+str(auxMessage) 
+                trueauxMessage = trueauxMessage + str(contHop) + str(lenHop)
+
+                print(f"{trueauxMessage}\n")
+                hopMessage(connected_peers,trueauxMessage,pid)
+
 def send_message(connected_peers, message,peer_id):
     #Propriedade para verificar se ID foi encontrado
     IdEncontrado = False
@@ -166,7 +229,7 @@ def send_message(connected_peers, message,peer_id):
 
             with open(f'pasta/{peer_id}/aes_{pid}_{peer_id}_key.key', 'wb') as key_file:
                 key_file.write(session_key)
-
+ 
             randPeerKey = read_public_key(pid)
             sizeId = len(pid)+1
 
@@ -174,17 +237,10 @@ def send_message(connected_peers, message,peer_id):
             message1 = encrypt_message(randPeerKey,message1)
             trueMessage = str(sizeId)+str(pid)+str(peer_idSize)+peer_id+"SK:"+str(message1) + str(0) + str(1)
             peer_connection(realAddr,trueMessage)
-
             #separação
-            # messages = fragment_message(message)
-            # for eachMessage in messages
-            message = encrypt_message(randPeerKey,message)
-            message = encrypt_message_aes(message,session_key)
-            message = message.hex()
-            trueMessage = str(sizeId)+str(pid)+str(peer_idSize)+peer_id+str(message) 
-
-            trueMessage = trueMessage + str(contHop) + str(lenHop) 
-            hopMessage(connected_peers,trueMessage,destinatario)
+            messages = fragment_message(message)
+            print(messages)
+            send_messageFrags(messages,sizeId,pid,peer_idSize,peer_id,contHop,lenHop)
             
             #Envia mensagem  
             # threading.Thread(target=peer_connection, args=(realAddr, trueMessage)).start()

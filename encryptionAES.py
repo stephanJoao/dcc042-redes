@@ -19,7 +19,6 @@ def generate_aes_key(password, salt=None):
     )
     key = base64.urlsafe_b64encode(kdf.derive(password.encode()))  # Deriva a chave AES
     return key[:32], salt
-
 # Função para criptografar uma mensagem com AES no modo CFB (Cipher Feedback Mode)
 def encrypt_message_aes(message: str, key: bytes):
     try:
@@ -32,7 +31,6 @@ def encrypt_message_aes(message: str, key: bytes):
         padded_data = padder.update(message.encode()) + padder.finalize()
         
         encrypted_message = encryptor.update(padded_data) + encryptor.finalize()
-
         # Retorna o IV concatenado com a mensagem criptografada
         return iv + encrypted_message
     
@@ -41,12 +39,10 @@ def encrypt_message_aes(message: str, key: bytes):
             raise ValueError("Too long!")  # Mensagem de erro personalizada
         else:
             raise e
-
 # Função para descriptografar uma mensagem com AES no modo CFB
 def decrypt_message_aes(encrypted_message: bytes, key: bytes):    
     iv = encrypted_message[:16]  # Extrai o IV dos primeiros 16 bytes
     encrypted_message = encrypted_message[16:]
-
     cipher = Cipher(algorithms.AES(key), modes.CFB(iv), backend=default_backend())
     decryptor = cipher.decryptor()
     
@@ -58,16 +54,20 @@ def decrypt_message_aes(encrypted_message: bytes, key: bytes):
     return decrypted_message.decode()
 
 # Função para fragmentar uma mensagem em partes menores, com tamanho definido
-def fragment_message(message, fragment_size=256):
+def fragment_message(message, fragment_size=4):
     fragments = []
     for i in range(0, len(message), fragment_size):
         fragment = message[i:i+fragment_size]
         fragment_id = i // fragment_size  # Calcula o ID do fragmento
         fragment_length = len(fragment)  # Calcula o tamanho do fragmento
+        numMaxFrags = str(int(len(message)/fragment_size) + (len(message)%fragment_size > 0))
         fragments.append({
-            'id': fragment_id,
-            'size': fragment_length,
-            'fragment': fragment
+            'id': str(fragment_id),
+            'idSize':str(len(str(fragment_id))+1),
+            'numMaxOfFrags':numMaxFrags,
+            'sizeNumMaxOfFrags':str(len(str(numMaxFrags))),
+            'size': str(fragment_length),
+            'fragment': str(fragment)
         })
     return fragments
 
