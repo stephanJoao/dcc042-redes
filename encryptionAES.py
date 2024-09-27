@@ -59,4 +59,39 @@ def decrypt_message_aes(encrypted_message: bytes, key: bytes):
 
 # Função para fragmentar uma mensagem em partes menores, com tamanho definido
 def fragment_message(message, fragment_size=256):
-    return [message[i:i+fragment_size] for i in range(0, len(message), fragment_size)]
+    fragments = []
+    for i in range(0, len(message), fragment_size):
+        fragment = message[i:i+fragment_size]
+        fragment_id = i // fragment_size  # Calcula o ID do fragmento
+        fragment_length = len(fragment)  # Calcula o tamanho do fragmento
+        fragments.append({
+            'id': fragment_id,
+            'size': fragment_length,
+            'fragment': fragment
+        })
+    return fragments
+
+# Função para organizar os fragmentos com base no ID
+def organize_fragments(fragments):
+    # Ordena os fragmentos recebidos com base no ID
+    return sorted(fragments, key=lambda x: x['id'])
+
+# Função para verificar se todos os fragmentos estão presentes
+def verify_fragments(fragments, expected_count):
+    return len(fragments) == expected_count
+
+# Função para remontar e descriptografar os fragmentos
+def reassemble_and_decrypt_fragments(fragments, aes_key):
+    # Organiza os fragmentos por ordem de ID
+    fragments = organize_fragments(fragments)
+    
+    # Descriptografa cada fragmento
+    decrypted_fragments = []
+    for fragment_info in fragments:
+        encrypted_fragment = fragment_info['fragment']
+        decrypted_fragment = decrypt_message_aes(encrypted_fragment, aes_key)  # Descriptografa o fragmento
+        decrypted_fragments.append(decrypted_fragment)
+    
+    # Junta os fragmentos em uma única string
+    complete_message = ''.join(decrypted_fragments)
+    return complete_message

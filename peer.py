@@ -216,9 +216,3 @@ if __name__ == "__main__":
 #função decripta mensagem quando chega
 #função encripta mensagem com chave de sessão
 #Função gera chave de seção
-
-
-#funcao de fragmentacao "id""fragmento""tamanho"
-#func de desfragmentacao 
-#func de ordenacao
-#verifica completa fragmento
